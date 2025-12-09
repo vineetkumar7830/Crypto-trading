@@ -1,0 +1,780 @@
+{
+	"info": {
+		"_postman_id": "813ee1a0-6405-4b6b-934a-61c5215dcf35",
+		"name": "crypto api",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "49035211",
+		"_collection_link": "https://vineetvineet8006-6bdbe03e-3694985.postman.co/workspace/vineet-kumar's-Workspace~1344bd5e-ceee-4149-8733-5419baf365e9/collection/49035211-813ee1a0-6405-4b6b-934a-61c5215dcf35?action=share&source=collection_link&creator=49035211"
+	},
+	"item": [
+		{
+			"name": "auth",
+			"item": [
+				{
+					"name": "affiliate auth",
+					"item": [
+						{
+							"name": "update affiliate user",
+							"request": {
+								"method": "POST",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\r\n  \"name\": \"Vineet Kumar\",\r\n  \"email\": \"vineet@example.com\",\r\n  \"password\": \"123456\",\r\n  \"phone\": \"9999999999\",\r\n  \"country\": \"India\",\r\n  \"whatsapp\": \"9999999999\",\r\n  \"telegram\": \"\",\r\n  \"link\": \"\",\r\n  \"description\": \"\"\r\n}\r\n",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "http://localhost:4000/api/users",
+									"protocol": "http",
+									"host": [
+										"localhost"
+									],
+									"port": "4000",
+									"path": [
+										"api",
+										"users"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "affiliate login",
+							"request": {
+								"method": "POST",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\r\n  \"name\": \"Lokesh Kumar\",\r\n  \"email\": \"vineetesing@example.com\",\r\n  \"phone\": \"8449211042\",\r\n  \"password\": \"12345678\"\r\n}\r\n",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "http://localhost:4000/api/affiliate/auth/login",
+									"protocol": "http",
+									"host": [
+										"localhost"
+									],
+									"port": "4000",
+									"path": [
+										"api",
+										"affiliate",
+										"auth",
+										"login"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "register affiliate",
+							"request": {
+								"method": "POST",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\r\n  \"name\": \"Lokesh Kumar\",\r\n  \"email\": \"lokessdfdhcscdsdd3sdf4ese@example.com\",\r\n  \"phone\": \"8449211042\",\r\n  \"password\": \"Test@123\"\r\n}\r\n",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "http://localhost:3000/api/affiliate/auth/registerAffiliateAccount",
+									"protocol": "http",
+									"host": [
+										"localhost"
+									],
+									"port": "3000",
+									"path": [
+										"api",
+										"affiliate",
+										"auth",
+										"registerAffiliateAccount"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "update password",
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI2OTA0NjY1NjA2ZDE0MWNhYjY3N2NmYmQiLCJlbWFpbCI6InZpbmVldGVzaW5nQGV4YW1wbGUuY29tIiwiaWF0IjoxNzYxODk2MDQ5LCJleHAiOjE3NjI1MDA4NDl9.4VaEzGPKHDMFU76iFGMil9mCrnRXRlcNrSsNU0IhzMU",
+											"type": "string"
+										}
+									]
+								},
+								"method": "PUT",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\r\n  \"oldPassword\": \"123456\",\r\n  \"newPassword\": \"12345678\"\r\n}\r\n",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "http://localhost:4000/api/affiliate/auth/updatePassword/6904665606d141cab677cfbd",
+									"protocol": "http",
+									"host": [
+										"localhost"
+									],
+									"port": "4000",
+									"path": [
+										"api",
+										"affiliate",
+										"auth",
+										"updatePassword",
+										"6904665606d141cab677cfbd"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "register Affiliate With Referal",
+							"request": {
+								"method": "POST",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\r\n  \"name\": \"Lokesh Kumar\",\r\n  \"email\": \"lokesh1234@example.com\",\r\n  \"phone\": \"8449211042\",\r\n  \"password\": \"Test@123\",\r\n  \"ref\":\"AFFVGZG0ABJ\"\r\n}\r\n",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "http://localhost:3000/api/affiliate/auth/registerUserWithReferral",
+									"protocol": "http",
+									"host": [
+										"localhost"
+									],
+									"port": "3000",
+									"path": [
+										"api",
+										"affiliate",
+										"auth",
+										"registerUserWithReferral"
+									]
+								}
+							},
+							"response": []
+						}
+					]
+				},
+				{
+					"name": "main auth",
+					"item": [
+						{
+							"name": "register",
+							"request": {
+								"method": "POST",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\r\n  \"name\": \"Lokesh Kumar\",\r\n  \"email\": \"lokesh@example.com\",\r\n  \"phone\": \"8449211042\",\r\n  \"password\": \"Test@123\"\r\n}\r\n",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "http://localhost:4000/api/auth/register",
+									"protocol": "http",
+									"host": [
+										"localhost"
+									],
+									"port": "4000",
+									"path": [
+										"api",
+										"auth",
+										"register"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "login",
+							"request": {
+								"method": "POST",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\r\n  \"email\": \"lokesh@test.com\",\r\n  \"password\": \"lokesh@123\"\r\n}\r\n",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "http://localhost:3000/api/auth/login",
+									"protocol": "http",
+									"host": [
+										"localhost"
+									],
+									"port": "3000",
+									"path": [
+										"api",
+										"auth",
+										"login"
+									]
+								}
+							},
+							"response": []
+						}
+					]
+				}
+			]
+		},
+		{
+			"name": "affiliate",
+			"item": [
+				{
+					"name": "Add commission",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n   \"amount\": \"100\"\r\n    \r\n}\r\n",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://localhost:4000/api/affiliate/6901ba5239b660d8d750136a/commission",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "4000",
+							"path": [
+								"api",
+								"affiliate",
+								"6901ba5239b660d8d750136a",
+								"commission"
+							],
+							"query": [
+								{
+									"key": "affiliateId",
+									"value": "690068e4fb0a9dab0db0e4ad/commission",
+									"disabled": true
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "get all affiliate",
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"method": "GET",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://localhost:4000/api/admin/AllDashboardDetails/6901ba5239b660d8d7501368",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "4000",
+							"path": [
+								"api",
+								"admin",
+								"AllDashboardDetails",
+								"6901ba5239b660d8d7501368"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "wallet",
+			"item": [
+				{
+					"name": "Check Wallet (Get My Wallet)",
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": " eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI2OTAxYmIzNTBmZDVmMjk4Y2QwMjdkYzQiLCJlbWFpbCI6Imxva2Vzc2RmZGhjc2Nkc2RkM3NkZjRlc2VAZXhhbXBsZS5jb20iLCJpYXQiOjE3NjE3MjIwNTYsImV4cCI6MTc2MjMyNjg1Nn0.EVAqXZBs-_O138cXI5b_-TiTNiYMva3CMImcLBp7WS4",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://localhost:4000/api/wallets/me",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "4000",
+							"path": [
+								"api",
+								"wallets",
+								"me"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Deposit Funds (Wallet Credit)",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI2OTAxYmIzNTBmZDVmMjk4Y2QwMjdkYzQiLCJlbWFpbCI6Imxva2Vzc2RmZGhjc2Nkc2RkM3NkZjRlc2VAZXhhbXBsZS5jb20iLCJpYXQiOjE3NjE3Mjg0MTYsImV4cCI6MTc2MjMzMzIxNn0.1pfonuOT8zepenbOWd74IcG4xgrzb8n_uzxXt_2_Krg",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n  \"asset\": \"USD\",\r\n  \"amount\": 500\r\n}\r\n",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://localhost:4000/api/wallets/deposit",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "4000",
+							"path": [
+								"api",
+								"wallets",
+								"deposit"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Transactions",
+			"item": [
+				{
+					"name": "Check Transactions",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI2OTAxYmIzNTBmZDVmMjk4Y2QwMjdkYzQiLCJlbWFpbCI6Imxva2Vzc2RmZGhjc2Nkc2RkM3NkZjRlc2VAZXhhbXBsZS5jb20iLCJpYXQiOjE3NjE3Mjg0MTYsImV4cCI6MTc2MjMzMzIxNn0.1pfonuOT8zepenbOWd74IcG4xgrzb8n_uzxXt_2_Krg",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:4000/api/admin/affiliate/transactions",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "4000",
+							"path": [
+								"api",
+								"admin",
+								"affiliate",
+								"transactions"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "KYC",
+			"item": [
+				{
+					"name": "Submit KYC Documents",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI2OTAxYmIzNTBmZDVmMjk4Y2QwMjdkYzQiLCJlbWFpbCI6Imxva2Vzc2RmZGhjc2Nkc2RkM3NkZjRlc2VAZXhhbXBsZS5jb20iLCJpYXQiOjE3NjE3Mjg0MTYsImV4cCI6MTc2MjMzMzIxNn0.1pfonuOT8zepenbOWd74IcG4xgrzb8n_uzxXt_2_Krg",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n  \"documents\": {\r\n    \"passport\": \"https://example.com/passport.jpg\",\r\n    \"idCard\": \"https://example.com/idcard.jpg\"\r\n  }\r\n}\r\n",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://localhost:4000/api/kyc/submit",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "4000",
+							"path": [
+								"api",
+								"kyc",
+								"submit"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Admin Approves/Rejects KYC",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"approve\":\"APPROVED\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://localhost:4000/api/kyc/6901eb3490d08cfb592a2d93/approve",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "4000",
+							"path": [
+								"api",
+								"kyc",
+								"6901eb3490d08cfb592a2d93",
+								"approve"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Check User KYC Status",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI2OTAxYmIzNTBmZDVmMjk4Y2QwMjdkYzQiLCJlbWFpbCI6Imxva2Vzc2RmZGhjc2Nkc2RkM3NkZjRlc2VAZXhhbXBsZS5jb20iLCJpYXQiOjE3NjE3Mjg0MTYsImV4cCI6MTc2MjMzMzIxNn0.1pfonuOT8zepenbOWd74IcG4xgrzb8n_uzxXt_2_Krg",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:4000/api/kyc/me",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "4000",
+							"path": [
+								"api",
+								"kyc",
+								"me"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "user profile",
+			"item": [
+				{
+					"name": "Register User",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n  \"name\": \"Vineet Kumar\",\r\n  \"email\": \"vineet@example.com\",\r\n  \"password\": \"123456\",\r\n  \"phone\": \"9999999999\",\r\n  \"country\": \"India\",\r\n  \"whatsapp\": \"9999999999\",\r\n  \"telegram\": \"\",\r\n  \"link\": \"\",\r\n  \"description\": \"\"\r\n}\r\n",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://localhost:4000/api/users",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "4000",
+							"path": [
+								"api",
+								"users"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Current User",
+					"request": {
+						"method": "GET",
+						"header": []
+					},
+					"response": []
+				},
+				{
+					"name": "get all user",
+					"request": {
+						"method": "GET",
+						"header": []
+					},
+					"response": []
+				},
+				{
+					"name": "Login User",
+					"request": {
+						"method": "GET",
+						"header": []
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Analytics",
+			"item": [
+				{
+					"name": "Create Analytics",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n  \"date\": \"2025-10-31\",\r\n  \"clicks\": 10,\r\n  \"signups\": 2,\r\n  \"earnings\": 50\r\n}\r\n",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://localhost:4000/api/analytics",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "4000",
+							"path": [
+								"api",
+								"analytics"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get All Analytics",
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"method": "GET",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://localhost:4000/api/analytics/totals",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "4000",
+							"path": [
+								"api",
+								"analytics",
+								"totals"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Single Analytics",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:4000/api/analytics/690487ae2db4f492fa40e175",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "4000",
+							"path": [
+								"api",
+								"analytics",
+								"690487ae2db4f492fa40e175"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Performance Overview",
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"method": "GET",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://localhost:4000/api/analytics/performance?startDate=2025-10-01&endDate=2025-10-31",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "4000",
+							"path": [
+								"api",
+								"analytics",
+								"performance"
+							],
+							"query": [
+								{
+									"key": "startDate",
+									"value": "2025-10-01"
+								},
+								{
+									"key": "endDate",
+									"value": "2025-10-31"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get All Analytics",
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"method": "GET",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://localhost:4000/api/analytics",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "4000",
+							"path": [
+								"api",
+								"analytics"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		}
+	]
+}
