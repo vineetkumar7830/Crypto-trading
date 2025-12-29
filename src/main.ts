@@ -1,29 +1,55 @@
 import * as dotenv from 'dotenv';
-dotenv.config(); // SABSE PEHLE load karna hai
+dotenv.config();
 
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
-import { Logger } from '@nestjs/common';
+import { Logger, ValidationPipe } from '@nestjs/common';
 import * as expressWinston from 'express-winston';
 import winston from 'winston';
 import { ConfigService } from '@nestjs/config';
 import helmet from 'helmet';
+import * as fs from 'fs';
+import * as https from 'https';
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
-  const config = app.get(ConfigService);
+  const config = new ConfigService();
   const logger = new Logger('Bootstrap');
+
+  const nodeEnv = process.env.NODE_ENV ?? 'development';
+  const isDev = nodeEnv !== 'production';
+  const port = parseInt(process.env.PORT ?? '4000', 10);
+
+  logger.log(`Server environment: ${nodeEnv}, isDev: ${isDev}, port: ${port}`);
+
+  // Check if HTTPS is enabled via env
+  const useHttps = process.env.USE_HTTPS === 'true';
+  let app;
+
+  if (useHttps) {
+    // 🔹 Load SSL certificates (self-signed for dev)
+    const httpsOptions = {
+      key: fs.readFileSync(process.env.SSL_KEY_PATH ?? './cert/key.pem'),
+      cert: fs.readFileSync(process.env.SSL_CERT_PATH ?? './cert/cert.pem'),
+    };
+    app = await NestFactory.create(AppModule, { httpsOptions });
+    logger.log('HTTPS enabled');
+  } else {
+    app = await NestFactory.create(AppModule);
+    logger.log('HTTP enabled');
+  }
+
+  // 🔥 Required ValidationPipe
+  app.useGlobalPipes(
+    new ValidationPipe({
+      transform: true,
+      whitelist: true,
+    }),
+  );
 
   // Global API prefix
   app.setGlobalPrefix('api/v1');
 
-  // PORT & ENV
-  const port = parseInt(config.get<string>('PORT') ?? '4000', 10);
-  const nodeEnv = config.get<string>('NODE_ENV') ?? 'development';
-  const isDev = nodeEnv !== 'production';
-  logger.log(`Server environment: ${nodeEnv}, isDev: ${isDev}, port: ${port}`);
-
-  // CORS Configuration
+  // CORS configuration
   const envOrigins = (process.env.ALLOWED_ORIGINS ?? '').trim();
   const defaultOrigins = isDev
     ? [
@@ -43,7 +69,7 @@ async function bootstrap() {
 
   app.enableCors({
     origin: (origin, callback) => {
-      if (!origin) return callback(null, true); // Allow Postman / server-to-server
+      if (!origin) return callback(null, true);
 
       const normalized = origin.replace(/\/$/, '');
       if (allowedOrigins.includes(normalized)) return callback(null, true);
@@ -64,10 +90,10 @@ async function bootstrap() {
     maxAge: 86400,
   });
 
-  // Security headers
+  // Helmet for security
   app.use(helmet());
 
-  // HTTP Request Logging with Winston
+  // HTTP logging
   app.use(
     expressWinston.logger({
       winstonInstance: winston.createLogger({
@@ -86,7 +112,9 @@ async function bootstrap() {
   );
 
   await app.listen(port);
-  logger.log(`Server listening on http://localhost:${port}/api/v1`);
+
+  const protocol = useHttps ? 'https' : 'http';
+  logger.log(`Server listening on ${protocol}://localhost:${port}/api/v1`);
 }
 
 bootstrap();

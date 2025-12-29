@@ -1,154 +1,222 @@
-import { Injectable, BadRequestException } from '@nestjs/common';
+import {
+  Injectable,
+  BadRequestException,
+  Inject,
+  forwardRef,
+} from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import { Wallet } from './entities/wallet.entity';
 import { UserService } from '../user/user.service';
 import CustomResponse from 'providers/custom-response.service';
-import CustomError from 'providers/customer-error.service';
 
 @Injectable()
 export class WalletService {
   constructor(
     @InjectModel(Wallet.name) private walletModel: Model<Wallet>,
+    @Inject(forwardRef(() => UserService))
     private userService: UserService,
   ) {}
 
-  async deposit(data: { userId: string; amount: number; crypto: string }) {
-    try {
-      const fakeAddress = `fake-${data.crypto}-${Date.now()}`;
+  // ================= CREATE WALLET =================
+  async createWallet(userId: string) {
+    const exist = await this.walletModel.findOne({
+      userId: new Types.ObjectId(userId),
+    });
 
-      // always store cryptoType as UPPERCASE to keep consistency
-      const cryptoType = (data.crypto || '').toUpperCase();
+    if (exist) return exist;
 
-      const userIdObj = Types.ObjectId.isValid(data.userId)
-        ? new Types.ObjectId(data.userId)
-        : data.userId;
-
-      const wallet = new this.walletModel({
-        userId: userIdObj,
-        cryptoType,
-        amount: data.amount,
-        address: fakeAddress,
-        type: 'deposit',
-        status: 'completed',
-      });
-
-      await wallet.save();
-
-      // update main numeric balance (USDT-based)
-      await this.updateBalance(data.userId, data.amount);
-
-      return new CustomResponse(200, 'Deposit successful', wallet);
-    } catch (error: any) {
-      return new CustomError(500, error.message);
-    }
+    return this.walletModel.create({
+      userId: new Types.ObjectId(userId),
+      cryptoType: 'USDT',
+      amount: 0,
+      type: 'deposit',
+      status: 'completed',
+      address: `wallet-${Date.now()}`,
+    });
   }
 
+  // ================= DEPOSIT =================
+  async deposit(data: { userId: string; amount: number | string; crypto?: string }) {
+    const amount = Number(data.amount);
+    if (isNaN(amount) || amount <= 0) {
+      throw new BadRequestException('Invalid deposit amount');
+    }
+
+    const userResp: any = await this.userService.findById(data.userId);
+    const user = userResp?.result;
+    if (!user) throw new BadRequestException('User not found');
+
+    const beforeBalance = user.balance || 0;
+    user.balance = beforeBalance + amount;
+    await user.save();
+
+    await this.walletModel.create({
+      userId: new Types.ObjectId(data.userId),
+      cryptoType: data.crypto || 'USDT',
+      amount,
+      type: 'deposit',
+      status: 'completed',
+      address: `deposit-${Date.now()}`,
+    });
+
+    return new CustomResponse(200, 'Deposit successful', {
+      depositedAmount: amount,
+      previousBalance: beforeBalance,
+      balance: user.balance,
+    });
+  }
+
+  // ================= WITHDRAW =================
   async withdraw(
     userId: string,
-    data: { crypto: string; amount: number; address: string },
+    data: { amount: number | string; address: string; crypto?: string },
   ) {
-    try {
-      const balanceResp: any = await this.getBalance(userId);
-      const balance = balanceResp?.result ?? {};
-
-      const cryptoType = (data.crypto || '').toUpperCase();
-
-      // allow 0 and negative checks correctly
-      const available = typeof balance[cryptoType] === 'number' ? balance[cryptoType] : 0;
-
-      if (!available || available < data.amount) {
-        throw new BadRequestException('Insufficient balance');
-      }
-
-      const fakeTx = `tx-${Date.now()}`;
-
-      const userIdObj = Types.ObjectId.isValid(userId)
-        ? new Types.ObjectId(userId)
-        : userId;
-
-      await this.walletModel.create({
-        userId: userIdObj,
-        cryptoType,
-        amount: -data.amount,
-        address: data.address,
-        txHash: fakeTx,
-        type: 'withdraw',
-        status: 'pending',
-      });
-
-      // update main balance (USDT-based)
-      await this.updateBalance(userId, -data.amount);
-
-      return new CustomResponse(200, 'Withdrawal initiated', { txHash: fakeTx });
-    } catch (error: any) {
-      return new CustomError(500, error.message);
+    const amount = Number(data.amount);
+    if (isNaN(amount) || amount <= 0) {
+      throw new BadRequestException('Invalid withdraw amount');
     }
+
+    const userResp: any = await this.userService.findById(userId);
+    const user = userResp?.result;
+    if (!user) throw new BadRequestException('User not found');
+
+    if ((user.balance || 0) < amount) {
+      throw new BadRequestException('Insufficient balance');
+    }
+
+    const beforeBalance = user.balance;
+    user.balance = beforeBalance - amount;
+    await user.save();
+
+    await this.walletModel.create({
+      userId: new Types.ObjectId(userId),
+      cryptoType: data.crypto || 'USDT',
+      amount: -amount,
+      type: 'withdraw',
+      status: 'completed',
+      address: data.address,
+    });
+
+    return new CustomResponse(200, 'Withdraw successful', {
+      withdrawnAmount: amount,
+      previousBalance: beforeBalance,
+      balance: user.balance,
+    });
   }
 
+  // ================= BALANCE =================
   async getBalance(userId: string) {
-    try {
-      const userIdObj = Types.ObjectId.isValid(userId)
-        ? new Types.ObjectId(userId)
-        : userId;
+    const userResp: any = await this.userService.findById(userId);
+    const user = userResp?.result;
+    if (!user) throw new BadRequestException('User not found');
 
-      const result = await this.walletModel.aggregate([
-        { $match: { userId: userIdObj } },
-        { $group: { _id: '$cryptoType', total: { $sum: '$amount' } } },
-      ]);
-
-      const balance: Record<string, number> = {};
-
-      // Normalize results: keys expected UPPERCASE
-      result.forEach((r: any) => {
-        const key = (r._id || '').toString().toUpperCase();
-        balance[key] = Number(r.total) || 0;
-      });
-
-      // Ensure defaults (explicitly set 0 if missing)
-      ['USDT', 'BTC', 'ETH', 'BNB'].forEach((c) => {
-        if (typeof balance[c] !== 'number') balance[c] = 0;
-      });
-
-      return new CustomResponse(200, 'Balance fetched', balance);
-    } catch (error: any) {
-      return new CustomError(500, error.message);
-    }
+    return new CustomResponse(200, 'Balance fetched', {
+      balance: user.balance || 0,
+      lockedBalance: user.lockedBalance || 0,
+      total: (user.balance || 0) + (user.lockedBalance || 0),
+    });
   }
 
-  async updateBalance(userId: string, delta: number) {
-    try {
-      const userResp: any = await this.userService.findById(userId);
-      const user = userResp?.result;
-
-      if (!user) throw new BadRequestException('User not found');
-
-      user.balance = (user.balance || 0) + delta;
-      await user.save();
-
-      return new CustomResponse(200, 'Balance updated', {
-        balance: user.balance,
-      });
-    } catch (error: any) {
-      return new CustomError(500, error.message);
+  // ================= LOCK BALANCE =================
+  async lockBalance(userId: string, amount: number) {
+    if (amount <= 0) {
+      throw new BadRequestException('Invalid lock amount');
     }
+
+    const userResp: any = await this.userService.findById(userId);
+    const user = userResp?.result;
+    if (!user) throw new BadRequestException('User not found');
+
+    if ((user.balance || 0) < amount) {
+      throw new BadRequestException('Insufficient balance');
+    }
+
+    user.balance -= amount;
+    user.lockedBalance = (user.lockedBalance || 0) + amount;
+    await user.save();
+
+    await this.walletModel.create({
+      userId: new Types.ObjectId(userId),
+      cryptoType: 'USDT',
+      amount: -amount,
+      type: 'lock',
+      status: 'completed',
+      address: `trade-lock-${Date.now()}`,
+    });
   }
 
-  async updatePnL(userId: string, pnl: number) {
-    try {
-      const userResp: any = await this.userService.findById(userId);
-      const user = userResp?.result;
+  // ================= UNLOCK BALANCE (🔥 REAL FIX HERE) = = = = = = = = = = = = = = = = =
+  async unlockBalance(userId: string, stake: number, profitLoss: number) {
+    const userResp: any = await this.userService.findById(userId);
+    const user = userResp?.result;
+    if (!user) throw new BadRequestException('User not found');
 
-      if (!user) throw new BadRequestException('User not found');
+    stake = Number(stake);
+    profitLoss = Number(profitLoss);
 
-      user.totalPnL = (user.totalPnL || 0) + pnl;
-      await user.save();
-
-      return new CustomResponse(200, 'PnL updated', {
-        totalPnL: user.totalPnL,
-      });
-    } catch (error: any) {
-      return new CustomError(500, error.message);
+    // ✅ locked balance safely release (return hata diya)
+    if ((user.lockedBalance || 0) >= stake) {
+      user.lockedBalance -= stake;
+    } else {
+      user.lockedBalance = 0;
     }
+
+    /**
+     * PROFIT:
+     *   stake + profitLoss → balance me add
+     * LOSS:
+     *   creditAmount = 0 → balance same rahega
+     */
+    const creditAmount = stake + profitLoss;
+
+    if (creditAmount > 0) {
+      user.balance = (user.balance || 0) + creditAmount;
+    }
+
+    user.totalProfit = (user.totalProfit || 0) + profitLoss;
+    await user.save();
+
+    await this.walletModel.create({
+      userId: new Types.ObjectId(userId),
+      cryptoType: 'USDT',
+      amount: creditAmount,
+      type: 'unlock',
+      status: 'completed',
+      address: `trade-unlock-${Date.now()}`,
+    });
+  }
+
+  // ================= WALLET HISTORY =================
+  async getWalletHistory(userId: string) {
+    const history = await this.walletModel
+      .find({ userId: new Types.ObjectId(userId) })
+      .sort({ createdAt: 1 });
+
+    const formatted = history.map((item) => ({
+      id: item._id,
+      type: item.type,
+      title:
+        item.type === 'deposit'
+          ? 'Deposit'
+          : item.type === 'withdraw'
+          ? 'Withdraw'
+          : item.type === 'lock'
+          ? 'Trade Locked'
+          : 'Trade Unlocked',
+      amount: item.amount,
+      cryptoType: item.cryptoType,
+      status: item.status,
+      address: item.address,
+      createdAt: item.createdAt,
+    }));
+
+    return new CustomResponse(200, 'Wallet history fetched', {
+      deposit: formatted.filter((i) => i.type === 'deposit'),
+      withdraw: formatted.filter((i) => i.type === 'withdraw'),
+      tradeLock: formatted.filter((i) => i.type === 'lock'),
+      tradeUnlock: formatted.filter((i) => i.type === 'unlock'),
+      all: formatted,
+    });
   }
 }

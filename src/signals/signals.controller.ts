@@ -1,22 +1,37 @@
-
-import { Controller, Get, Post, Param, Request, UseGuards } from '@nestjs/common';
-import { SignalsService } from './signals.service';
-import { JwtAuthGuard } from '../auth/jwt-auth.guard'; 
-import { AuthGuard } from '@nestjs/passport'; 
+import { Controller, Post, Body, Get } from '@nestjs/common';
+import { SignalService } from './signals.service';
+import { CreateSignalDto } from './dto/create-signal.dto';
 
 @Controller('signals')
-export class SignalsController {
-  constructor(private signalsService: SignalsService) {}
+export class SignalController {
+  constructor(private readonly signalService: SignalService) {}
 
-  @Get('latest')
-  @UseGuards(JwtAuthGuard)
-  getLatest(@Request() req: any) { 
-    return this.signalsService.getLatest(req.user.userId);
+  @Post('create')
+  async createSignal(@Body() dto: CreateSignalDto) {
+    const signal = await this.signalService.createSignal(dto);
+
+    return {
+      success: true,
+      message: 'Trade opened successfully',
+      result: {
+        id: signal._id,
+        asset: signal.asset,
+        direction: signal.direction,
+        entryPrice: signal.entryPrice,
+        expiry: signal.expiry,
+        status: 'RUNNING',
+      },
+    };
   }
- 
-  @Post('subscribe/:signalId')
-  @UseGuards(JwtAuthGuard)
-  subscribe(@Param('signalId') signalId: string, @Request() req: any) { 
-    return this.signalsService.subscribe(req.user.userId, signalId);
+
+  @Get()
+  async getSignals() {
+    const signals = await this.signalService.getAllSignals();
+
+    return {
+      success: true,
+      total: signals.length,
+      result: signals,
+    };
   }
 }

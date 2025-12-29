@@ -1,8 +1,4 @@
-import {
-  Injectable,
-  UnauthorizedException,
-  BadRequestException,
-} from '@nestjs/common';
+import { Injectable, UnauthorizedException, BadRequestException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { UserService } from '../user/user.service';
 import * as bcrypt from 'bcrypt';
@@ -17,73 +13,64 @@ export class AuthService {
   ) {}
 
   async login(email: string, password: string) {
-    const user = await this.userService.findByEmailUser(email);
+    
+    const user = await this.userService.findByEmail(email); 
     if (!user) throw new UnauthorizedException('User not found');
-    const passwordValid = await bcrypt.compare(password, user.password);
-    if (!passwordValid) throw new UnauthorizedException('Invalid credentials');
 
-    const payload = {
-      userId: user.id,
+    const valid = await bcrypt.compare(password, user.password);
+    if (!valid) throw new UnauthorizedException('Invalid credentials');
+
+    const token = this.jwtService.sign({
+      userId: user._id,
       email: user.email,
       role: user.role,
-    };
-    const token = this.jwtService.sign(payload);
+    });
 
     return {
       statusCode: 200,
       message: 'Login successful',
       data: {
         access_token: token,
-        user: { id: user.id, email: user.email, role: user.role },
+        user,
       },
     };
   }
 
+  // -------------------------------
+  // GENERATE OTP
+  // -------------------------------
   async generateOTP(userId: string) {
-    const secret = speakeasy.generateSecret({
-      name: `CryptoApp (${userId})`,
-      length: 20,
-    });
+    const resp = await this.userService.findById(userId);
+    const user = resp?.result;
+    if (!user) throw new BadRequestException('User not found');
 
-    await this.userService.update(userId, { twoFactorSecret: secret.base32 });
+    const secret = speakeasy.generateSecret({ length: 20 });
+    await this.userService.update(userId, { otpSecret: secret.base32 });
 
-    const otpauthUrl = speakeasy.otpauthURL({
+    const otpURL = speakeasy.otpauthURL({
       secret: secret.ascii,
-      label: 'CryptoApp',
-      encoding: 'ascii',
+      label: `MyApp:${userId}`,
+      algorithm: 'sha1',
     });
 
-    const qrCodeDataUrl = await QRCode.toDataURL(otpauthUrl);
-    
-    return {
-      statusCode: 200,
-      message: 'OTP generated successfully',
-      data: {
-        secret: secret.base32,
-        qrCode: qrCodeDataUrl,
-      },
-    };
+    const qrCode = await QRCode.toDataURL(otpURL);
+
+    return { qrCode, secret: secret.base32 };
   }
-  
+
   async verifyOTP(userId: string, token: string) {
-    const user = await this.userService.findById(userId);
-    if (!user) throw new UnauthorizedException('User not found');
-    if (!user.result.twoFactorSecret)
-      throw new BadRequestException('2FA not set up for this user');
+    const resp = await this.userService.findById(userId);
+    const user = resp?.result;
+    if (!user) throw new BadRequestException('User not found');
 
     const verified = speakeasy.totp.verify({
-      secret: user.result.twoFactorSecret,
+      secret: user.otpSecret,
       encoding: 'base32',
       token,
-      window: 1,
     });
 
-    if (!verified) throw new UnauthorizedException('Invalid or expired OTP');
+    if (!verified) throw new UnauthorizedException('Invalid OTP');
 
-    return {
-      statusCode: 200,
-      message: 'OTP verified successfully',
-      data: { verified: true },
-    };
+    return { verified: true };
   }
 }

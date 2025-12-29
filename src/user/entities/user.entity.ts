@@ -1,10 +1,11 @@
-
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document } from 'mongoose';
 
+export type UserDocument = User & Document;
+
 @Schema({ timestamps: true })
-export class User extends Document {
-  
+export class User {
+
   @Prop({ required: true })
   name: string;
 
@@ -20,10 +21,10 @@ export class User extends Document {
   @Prop({ default: 0 })
   totalPnL: number;
 
-  @Prop({unique: true})
+  @Prop({ unique: true })
   affiliateCode: string;
 
-  @Prop()
+  @Prop({ default: null })
   parentAffiliate?: string;
 
   @Prop({ default: 'user' })
@@ -60,12 +61,12 @@ export class User extends Document {
 
   @Prop({ type: Object })
   kyc?: { status: string; docs: string };
+
   @Prop({
     type: [{ code: String, discount: Number }],
     default: [],
   })
   promoCodes: { code: string; discount: number }[];
 }
-
 
 export const UserSchema = SchemaFactory.createForClass(User);

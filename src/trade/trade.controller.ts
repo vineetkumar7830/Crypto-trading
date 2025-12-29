@@ -1,41 +1,61 @@
-import { Controller, Post, Get, Param, Body, UseGuards,Query, Request } from '@nestjs/common';
+import {
+  Controller,
+  Post,
+  Get,
+  Body,
+  UseGuards,
+  Request,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { TradeService } from './trade.service';
-import { CreateTradeDto } from './dto/create-trade.dto';
-import { SELF_DECLARED_DEPS_METADATA } from '@nestjs/common/constants';
 
-@Controller('trades')
+@Controller('trade')
 export class TradeController {
-  constructor(private tradeService: TradeService) {}
+  constructor(private readonly tradeService: TradeService) {}
 
   @Post('buy')
   @UseGuards(JwtAuthGuard)
-  buy(@Body() dto: any, @Request() req) {
-    return this.tradeService.createTrade(dto, 'buy', req.user.userId);
+  buy(@Request() req, @Body() body: any) {
+    const userId = req.user?.userId || req.user?.id || req.user?.sub;
+    if (!userId) throw new UnauthorizedException('User ID not found');
+
+    return this.tradeService.buy(body, userId);
   }
 
   @Post('sell')
   @UseGuards(JwtAuthGuard)
-  sell(@Body() dto: any, @Request() req) {
-    return this.tradeService.createTrade(dto, 'sell', req.user.userId);
+  sell(@Request() req, @Body() body: any) {
+    const userId = req.user?.userId || req.user?.id || req.user?.sub;
+    if (!userId) throw new UnauthorizedException('User ID not found');
+
+    return this.tradeService.sell(body, userId);
   }
 
-  @Get('history/open/:userId')
+  @Get('open')
   @UseGuards(JwtAuthGuard)
-  getOpen(@Param('userId') userId: string) {
-    return this.tradeService.getHistory(userId, 'open');
-  }
-  
-  @Get('history/closed/:userId')
-  @UseGuards(JwtAuthGuard)
-  getClosed(@Param('userId') userId: string) {
-    return this.tradeService.getHistory(userId, 'closed');
+  getOpenTrades(@Request() req) {
+    const userId = req.user?.userId || req.user?.id || req.user?.sub;
+    if (!userId) throw new UnauthorizedException('User ID not found');
+
+    return this.tradeService.getOpenTrades(userId);
   }
 
-  @Get('filter')
+  @Get('closed')
   @UseGuards(JwtAuthGuard)
-  filter(@Query() query: any, @Request() req) {
-    console.log('req fo ',req.user)
-    return this.tradeService.filterTrades(req.user.userId, query);
+  getClosedTrades(@Request() req) {
+    const userId = req.user?.userId || req.user?.id || req.user?.sub;
+    if (!userId) throw new UnauthorizedException('User ID not found');
+
+    return this.tradeService.getClosedTrades(userId);
+  }
+
+  @Get('history')
+  @UseGuards(JwtAuthGuard)
+  getTradeHistory(@Request() req) {
+    const userId = req.user?.userId || req.user?.id || req.user?.sub;
+    if (!userId) throw new UnauthorizedException('User ID not found');
+
+    return this.tradeService.getTradeHistory(userId);
   }
 }

@@ -1,19 +1,25 @@
-import { Controller, Post, Get, Body, UseGuards, Request, UnauthorizedException } from '@nestjs/common';
+import {
+  Controller,
+  Post,
+  Get,
+  Body,
+  UseGuards,
+  Request,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { WalletService } from './wallet.service';
+
 
 @Controller('wallet')
 export class WalletController {
   constructor(private readonly walletService: WalletService) {}
-
+  
   @Post('deposit')
   @UseGuards(JwtAuthGuard)
-  async deposit(
-    @Request() req,
-    @Body() body: { amount: number; crypto: string },
-  ) {
+  deposit(@Request() req, @Body() body) {
     const userId = req.user?.userId || req.user?.id || req.user?.sub;
-    if (!userId) throw new UnauthorizedException('User ID not found in token');
+    if (!userId) throw new UnauthorizedException();
 
     return this.walletService.deposit({
       userId,
@@ -23,23 +29,29 @@ export class WalletController {
   }
   @Post('withdraw')
   @UseGuards(JwtAuthGuard)
-  async withdraw(
-    @Request() req,
-    @Body() body: { crypto: string; amount: number; address: string },
-  ) {
+  withdraw(@Request() req, @Body() body) {
     const userId = req.user?.userId || req.user?.id || req.user?.sub;
-    if (!userId) throw new UnauthorizedException('User ID not found in token');
+    if (!userId) throw new UnauthorizedException();
 
     return this.walletService.withdraw(userId, body);
   }
 
-
   @Get('balance')
   @UseGuards(JwtAuthGuard)
-  async getBalance(@Request() req) {
+  getBalance(@Request() req) {
     const userId = req.user?.userId || req.user?.id || req.user?.sub;
-    if (!userId) throw new UnauthorizedException('User ID not found in token');
+    if (!userId) throw new UnauthorizedException();
 
     return this.walletService.getBalance(userId);
+  }
+
+  @Get('history')
+  @UseGuards(JwtAuthGuard)
+  getHistory(@Request() req) {
+    const userId = req.user?.userId || req.user?.id || req.user?.sub;
+    if (!userId) throw new UnauthorizedException('User ID not found');
+    
+    return this.walletService.getWalletHistory(userId);
+    
   }
 }

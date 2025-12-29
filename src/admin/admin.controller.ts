@@ -1,39 +1,37 @@
+// src/admin/admin.controller.ts
 import { Controller, Get, Post, Param, Body, UseGuards } from '@nestjs/common';
-import { AuthGuard } from '@nestjs/passport'; 
+import { AuthGuard } from '@nestjs/passport';
 import { RolesGuard, Roles } from '../auth/guards/role.guard';
 import { AdminService } from './admin.service';
 import { PriceService } from 'src/price/price.service';
 
 @Controller('admin')
-@UseGuards(AuthGuard('jwt')) 
+@UseGuards(AuthGuard('jwt'), RolesGuard) // RolesGuard applied globally for this controller
 export class AdminController {
   constructor(
     private adminService: AdminService,
     private priceService: PriceService,
   ) {}
 
-  @UseGuards(RolesGuard)
+  // ✅ Admin-only routes
   @Roles('admin')
   @Get('users')
   getUsers() {
     return this.adminService.getAllUsers();
   }
 
-  @UseGuards(RolesGuard)
   @Roles('admin')
   @Get('trades')
   getTrades() {
     return this.adminService.getAllTrades();
   }
 
-  @UseGuards(RolesGuard)
   @Roles('admin')
   @Get('commissions-summary')
   getCommissions() {
     return this.adminService.getCommissionsSummary();
   }
 
-  @UseGuards(RolesGuard)
   @Roles('admin')
   @Post('kyc/approve/:id')
   approveKyc(
@@ -43,26 +41,35 @@ export class AdminController {
     return this.adminService.approveKyc(id, body);
   }
 
-  @UseGuards(RolesGuard)
+  @Roles('admin')
+  @Post('affiliate/approve/:id')
+  approveAffiliate(@Param('id') id: string) {
+    return this.adminService.approveAffiliate(id);
+  }
+
   @Roles('admin')
   @Post('set-price/:symbol')
   setPrice(@Param('symbol') symbol: string, @Body('price') price: number) {
     return this.priceService.setCustomPrice(symbol, price);
   }
 
-  // 🔒 Only admin can view affiliates
-  @UseGuards(RolesGuard)
   @Roles('admin')
   @Get('affiliates/all')
   getAllAffiliates() {
     return this.adminService.getAllAffiliates();
   }
 
-  // 🔒 Only admin can see bonus summary
-  @UseGuards(RolesGuard)
   @Roles('admin')
   @Get('bonuses/summary')
   getBonusSummary() {
     return this.adminService.getTotalBonuses();
   }
+
+  // ✅ Optional route for both admin & user (example)
+  // Agar aise koi route chahiye jo user bhi access kare
+  // @Roles('admin', 'user')
+  // @Get('some-route')
+  // someRoute() {
+  //   return this.adminService.someMethod();
+  // }
 }

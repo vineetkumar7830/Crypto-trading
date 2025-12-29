@@ -1,6 +1,7 @@
-import { Controller, Get, Post, Body, Param, UseGuards, Request } from '@nestjs/common';
+import { Controller, Get, Post, Param, UseGuards, Request, Body } from '@nestjs/common';
 import { AffiliateService } from './affiliate.service';
 import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
+import { RolesGuard, Roles } from 'src/auth/guards/role.guard';
 
 @UseGuards(JwtAuthGuard)
 @Controller('affiliate')
@@ -9,30 +10,26 @@ export class AffiliateController {
 
   @Get('dashboard')
   async dashboard(@Request() req) {
-    const userId = req.user?.userId || req.user?.sub || req.user?.id;
+    const userId = req.user?.userId;
     return this.affiliateService.getDashboard(userId);
-  }
-
-  @Get('referrals')
-  async getReferrals(@Request() req) {
-    const userId = req.user?.userId || req.user?.sub || req.user?.id;
-    return this.affiliateService.getReferrals(userId);
-  }
-
-  @Get('commissions-by-referral')
-  async getCommissionsByReferral(@Request() req) {
-    const userId = req.user?.userId || req.user?.sub || req.user?.id;
-    return this.affiliateService.getCommissionsByReferral(userId);
-  }
-
-  @Post('add/:affiliateId')
-  async addCommission(@Param('affiliateId') affiliateId: string, @Body('amount') amount: number) {
-    return this.affiliateService.addCommission(affiliateId, Number(amount));
   }
 
   @Post('generate-link')
   async generateLink(@Request() req) {
-    const userId = req.user?.userId || req.user?.sub || req.user?.id;
+    const userId = req.user?.userId;
     return this.affiliateService.generateReferralLink(userId);
+  }
+
+  @UseGuards(RolesGuard)
+  @Roles('admin')
+  @Post('approve/:userId')
+  async approve(@Param('userId') userId: string) {
+    return this.affiliateService.approveAffiliate(userId);
+  }
+
+  @Post('join')
+  async join(@Request() req, @Body('code') code: string) {
+    const userId = req.user?.userId;
+    return this.affiliateService.join(userId, code);
   }
 }

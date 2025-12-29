@@ -1,18 +1,18 @@
-import { Controller, Get, Post, Body, Param, UseGuards, Patch } from '@nestjs/common';
-import { JwtAuthGuard } from '../auth/jwt-auth.guard'; 
+import { Controller, Get, Post, Body, Param, Patch, UseGuards, Request } from '@nestjs/common';
+import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { UserService } from './user.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateProfileDto } from './dto/update-user.dto';
 
 @Controller('users')
 export class UserController {
-  constructor(private userService: UserService) {}
+  constructor(private readonly userService: UserService) {}
 
   @Post()
   create(@Body() createUserDto: CreateUserDto) {
     return this.userService.create(createUserDto);
   }
-
+  
   @Get('profile/:id')
   @UseGuards(JwtAuthGuard)
   getProfile(@Param('id') id: string) {

@@ -11,8 +11,9 @@ import { AuthService } from './auth.service';
 import { UserService } from '../user/user.service';
 import { CreateUserDto } from '../user/dto/create-user.dto';
 import { AuthGuard } from '@nestjs/passport';
-import { RolesGuard, Roles } from './guards/role.guard';
 import { AffiliateService } from '../affiliate/affiliate.service';
+import { WalletService } from '../wallet/wallet.service';
+import CustomResponse from 'providers/custom-response.service';
 
 @Controller('auth')
 export class AuthController {
@@ -20,26 +21,19 @@ export class AuthController {
     private readonly authService: AuthService,
     private readonly userService: UserService,
     private readonly affiliateService: AffiliateService,
+    private readonly walletService: WalletService,
   ) {}
 
   @Post('register')
   async register(@Body() createUserDto: CreateUserDto) {
-    // create user
     const newUser = await this.userService.create(createUserDto);
+    if (!newUser || newUser.statusCode >= 400) return newUser;
 
-    // ensure newUser exists and has result/_id
-    const userId = newUser?.result?._id ? String(newUser.result._id) : (newUser?.result?.id ? String(newUser.result.id) : null);
-    if (!userId) return newUser; // creation failed, return as-is
-
-    // if front-end submitted referralCode in DTO, try to join affiliate
+    const userId = newUser.result?._id || newUser.result?.id;
+    try { await this.walletService.createWallet(String(userId)); } catch {}
+    try { await this.affiliateService.ensureAffiliate(String(userId)); } catch {}
     if ((createUserDto as any).referralCode) {
-      try {
-        await this.affiliateService.join(userId, (createUserDto as any).referralCode);
-      } catch (e) {
-        // non-fatal — we still return user creation success; optionally log
-        // You can return error to client if you prefer strict behavior
-        // For now we ignore affiliate join failure
-      }
+      try { await this.affiliateService.join(String(userId), (createUserDto as any).referralCode); } catch {}
     }
 
     return newUser;
@@ -53,9 +47,7 @@ export class AuthController {
   @Post('generate-otp/:userId')
   @UseGuards(AuthGuard('jwt'))
   async generateOTP(@Param('userId') userId: string, @Request() req) {
-    if (req.user.userId !== userId) {
-      throw new UnauthorizedException('Unauthorized access to OTP generation');
-    }
+    if (req.user.userId !== userId) throw new UnauthorizedException('Unauthorized');
     return await this.authService.generateOTP(userId);
   }
 
@@ -66,9 +58,7 @@ export class AuthController {
     @Body('token') token: string,
     @Request() req,
   ) {
-    if (req.user.userId !== userId) {
-      throw new UnauthorizedException('Unauthorized access to OTP verification');
-    }
+    if (req.user.userId !== userId) throw new UnauthorizedException('Unauthorized');
     return await this.authService.verifyOTP(userId, token);
   }
 }

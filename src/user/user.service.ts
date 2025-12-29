@@ -1,152 +1,131 @@
-import { Injectable, ConflictException, BadRequestException, NotFoundException } from '@nestjs/common';
+import { Injectable, BadRequestException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
-import { User } from './entities/user.entity';
-import { CreateUserDto } from './dto/create-user.dto';
-import { UpdateProfileDto } from './dto/update-user.dto';
-import * as bcrypt from 'bcrypt';
-import { NotificationService } from '../notification/notification.service';
+import { User, UserDocument } from './entities/user.entity';
 import CustomResponse from 'providers/custom-response.service';
-import { throwException } from 'util/errorhandling';
-import CustomError from 'providers/customer-error.service';
+import * as bcrypt from 'bcrypt';
 
 @Injectable()
 export class UserService {
   constructor(
-    @InjectModel(User.name) private userModel: Model<User>,
-    private notificationService: NotificationService,
+    @InjectModel(User.name) private userModel: Model<UserDocument>,
   ) {}
 
-  async create(createUserDto: CreateUserDto) {
+  // ✅ Always generate unique affiliate code
+  async generateUniqueAffiliateCode(): Promise<string> {
+    let code: string = '';
+    let exists = true;
+
+    while (exists) {
+      code = Math.random().toString(36).substring(2, 10).toUpperCase();
+      const result = await this.userModel.exists({ affiliateCode: code });
+      exists = !!result;
+    }
+
+    return code;
+  }
+
+  async create(data: any): Promise<CustomResponse> {
     try {
-      const existing = await this.userModel.findOne({ email: createUserDto.email }).exec();
-      if (existing) throw new ConflictException('Email already exists');
+      // ✅ Check duplicate email first
+      const existingUser = await this.userModel.findOne({ email: data.email }).lean();
+      if (existingUser) {
+        return new CustomResponse(400, 'Email already exists', null);
+      }
 
-      const hashed = await bcrypt.hash(createUserDto.password, 10);
+      const salt = await bcrypt.genSalt(10);
+      const hashedPassword = await bcrypt.hash(data.password, salt);
 
-      const generatedAffiliateCode = createUserDto.affiliateCode
-        ? createUserDto.affiliateCode
-        : Math.random().toString(36).slice(-8);
+      const affiliateCode = await this.generateUniqueAffiliateCode();
 
-      const user = new this.userModel({
-        ...createUserDto,
-        password: hashed,
-        affiliateCode: generatedAffiliateCode,
-        balance: 0,
-        totalPnL: 0,
-        role: 'user',
-      } as Partial<User>);
+      const userPayload = {
+        ...data,
+        password: hashedPassword,
+        affiliateCode,
+      };
 
-      if ((createUserDto as any).referralCode) {
-        const parent = await this.userModel
-          .findOne({ affiliateCode: (createUserDto as any).referralCode })
-          .exec() as (User & { _id: Types.ObjectId }) | null;
+      const user = new this.userModel(userPayload);
 
-        if (parent) {
-          user.parentAffiliate = parent._id.toString();
-          user.role = parent.role === 'affiliate' ? 'sub_affiliate' : 'user';
-          user.commissionRate = user.role === 'sub_affiliate' ? 2 : 0;
+      try {
+        await user.save();
+      } catch (err: any) {
+        // ✅ Handle duplicate key errors safely
+        if (err.code === 11000) {
+          if (err.keyValue.email) return new CustomResponse(400, 'Email already exists', null);
+          if (err.keyValue.affiliateCode) {
+            user.affiliateCode = await this.generateUniqueAffiliateCode();
+            await user.save();
+          }
+        } else {
+          throw err;
         }
       }
 
-      const saved = await user.save();
-      await this.notificationService.sendEmail(String(saved._id), 'Welcome', 'Account created!');
-
-      return new CustomResponse(201, 'User created successfully', saved);
-    } catch (err: any) {
-      throwException(err);
+      return new CustomResponse(201, 'User created successfully', user.toObject());
+    } catch (error: any) {
+      console.error('UserService CREATE Error:', error);
+      return new CustomResponse(500, error.message || 'Internal server error', null);
     }
   }
 
+  // ---------------------- FIND BY EMAIL ----------------------
   async findByEmail(email: string) {
+    return this.userModel.findOne({ email }).lean();
+  }
+
+  // ---------------------- FIND BY ID ----------------------
+  async findById(id: string): Promise<CustomResponse> {
+    if (!Types.ObjectId.isValid(id)) {
+      return new CustomResponse(404, 'Invalid user id', null);
+    }
+    const user = await this.userModel.findById(id);
+    return new CustomResponse(user ? 200 : 404, user ? 'User found' : 'User not found', user);
+  }
+
+  // ---------------------- UPDATE USER ----------------------
+  async update(id: string, data: any): Promise<CustomResponse> {
     try {
-      const user = await this.userModel.findOne({ email }).exec();
-      return new CustomResponse(200, 'User fetched successfully', user);
-    } catch (err) {
-      throwException(err);
+      if (!Types.ObjectId.isValid(id)) {
+        return new CustomResponse(400, 'Invalid user id', null);
+      }
+
+      // ✅ Check duplicate email when updating
+      if (data.email) {
+        const existingUser = await this.userModel.findOne({ email: data.email }).lean();
+        if (existingUser && (existingUser._id as Types.ObjectId).toString() !== id) {
+          return new CustomResponse(400, 'Email already in use', null);
+        }
+      }
+
+      const updatedUser = await this.userModel.findByIdAndUpdate(id, data, { new: true });
+      if (!updatedUser) return new CustomResponse(404, 'User not found', null);
+
+      return new CustomResponse(200, 'User updated successfully', updatedUser);
+    } catch (error: any) {
+      console.error('UserService UPDATE Error:', error);
+      return new CustomResponse(500, error.message || 'Internal server error', null);
     }
   }
 
-  async findByEmailUser(email: string) {
-    return this.userModel.findOne({ email }).exec();
+  async findByAffiliateCode(code: string): Promise<CustomResponse> {
+    if (!code) return new CustomResponse(400, 'Affiliate code is required', null);
+    const user = await this.userModel.findOne({ affiliateCode: code }).lean();
+    return new CustomResponse(user ? 200 : 404, user ? 'User found' : 'User not found', user);
   }
 
-  async findById(id: string) {
-    try {
-      if (!Types.ObjectId.isValid(id)) throw new BadRequestException('Invalid user id');
-
-      const user = await this.userModel.findById(id).exec();
-      if (!user) throw new NotFoundException('User not found');
-
-      return new CustomResponse(200, 'User fetched successfully', user);
-    } catch (err) {
-      throwException(err);
-    }
+  async findManyByIds(ids: string[]): Promise<CustomResponse> {
+    const validIds = ids.filter(id => Types.ObjectId.isValid(id)).map(id => new Types.ObjectId(id));
+    const users = await this.userModel.find({ _id: { $in: validIds } }).lean();
+    return new CustomResponse(200, 'Users fetched successfully', users);
   }
 
-  async update(id: string, updateDto: UpdateProfileDto | Partial<User>) {
-    try {
-      const updated = await this.userModel.findByIdAndUpdate(id, updateDto, { new: true }).exec();
-      return new CustomResponse(200, 'Profile updated successfully', updated);
-    } catch (err) {
-      throwException(err);
-    }
+  // ---------------------- GET PROFILE ----------------------
+  async getProfile(id: string): Promise<CustomResponse> {
+    return this.findById(id);
   }
 
-  async getProfile(id: string) {
-    try {
-      const user = await this.userModel.findById(id).exec();
-      if (!user) throw new NotFoundException('User not found');
-
-      user.totalPnL = await this.calculatePnL(id);
-      return new CustomResponse(200, 'Profile fetched successfully', user);
-    } catch (err) {
-      throwException(err);
-    }
-  }
-
-  async calculatePnL(userId: string): Promise<number> {
-    return 0;
-  }
-
-  async submitKyc(userId: string, docs: { idProof: string; addressProof: string }) {
-    try {
-      await this.userModel.updateOne(
-        { _id: userId },
-        { kyc: { status: 'pending', docs: JSON.stringify(docs) } },
-      ).exec();
-
-      return new CustomResponse(200, 'KYC submitted successfully', { status: 'pending' });
-    } catch (err) {
-      throwException(err);
-    }
-  }
-
-  async updateSocial(id: string, update: { followers?: string[]; following?: string[]; copySettings?: any; allowCopying?: boolean }) {
-    try {
-      const updated = await this.userModel.findByIdAndUpdate(id, { $set: update }, { new: true }).exec();
-      return new CustomResponse(200, 'Social data updated successfully', updated);
-    } catch (err) {
-      throwException(err);
-    }
-  }
-
-  async findByAffiliateCode(code: string) {
-    try {
-      const user = await this.userModel.findOne({ affiliateCode: code }).exec();
-      return new CustomResponse(200, 'Affiliate user fetched successfully', user);
-    } catch (err) {
-      throwException(err);
-    }
-  }
-
-  async findManyByIds(ids: (string | Types.ObjectId)[]) {
-    try {
-      const cleaned = ids.map(i => (typeof i === 'string' ? i : i.toString()));
-      const users = await this.userModel.find({ _id: { $in: cleaned } }).exec();
-      return new CustomResponse(200, 'Users fetched', users);
-    } catch (err) {
-      return new CustomError(500, (err as any).message || 'Failed to fetch users');
-    }
+  // ---------------------- CALCULATE PNL ----------------------
+  async calculatePnL(userId: string): Promise<CustomResponse> {
+    return new CustomResponse(200, 'PnL calculated', { userId, pnl: 0 });
   }
 }

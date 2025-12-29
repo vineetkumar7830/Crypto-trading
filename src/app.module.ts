@@ -16,11 +16,13 @@ import { SocialModule } from './social/social.module';
 import { MongooseModule } from '@nestjs/mongoose';
 import { ConfigModule } from '@nestjs/config';
 import { DashboardModule } from './dashboard/dashboard.module';
+import { TournamentModule } from './tournament/tournament.module';
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
    MongooseModule.forRoot(process.env.MONGO_URI || 'mongodb+srv://rs5045280:xbpneTRReMJD9LAc@cluster0.sbbouj5.mongodb.net/crypto_api_v2'), 
-    UserModule, AuthModule, AffiliateModule, TradeModule, PriceModule, WalletModule, NotificationModule, AdminModule, AnalyticsModule, KycModule, SignalsModule, SocialModule, DashboardModule],
+    UserModule, AuthModule, AffiliateModule, TradeModule, PriceModule, WalletModule, NotificationModule, AdminModule, AnalyticsModule,
+     KycModule, SignalsModule, SocialModule, DashboardModule, TournamentModule],
   controllers: [AppController],
   providers: [AppService],
 })

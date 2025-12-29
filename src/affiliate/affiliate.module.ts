@@ -11,7 +11,7 @@ import { WalletModule } from '../wallet/wallet.module';
   imports: [
     MongooseModule.forFeature([{ name: Affiliate.name, schema: AffiliateSchema }]),
     forwardRef(() => UserModule),
-    forwardRef(() => TradeModule),
+    forwardRef(() => TradeModule),        
     forwardRef(() => WalletModule),
   ],
   providers: [AffiliateService],
